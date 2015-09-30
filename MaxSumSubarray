@@ -1,0 +1,28 @@
+package com.kondeti.arrays;
+
+public class MaxSumSubarray {
+	static int getMaxSum(int[] a){
+		if(a==null)
+			return -1;
+		int max_so_for=0,max_ending_here=0;
+		int si=-1,ei=-1,ts = -1;
+		for(int i=0;i<a.length;i++){
+			max_ending_here+=a[i];
+			if(max_ending_here<0){
+				max_ending_here=0;
+				si=i+1;
+			}
+			if(max_so_for<max_ending_here){
+				max_so_for=max_ending_here;
+				ts=si;
+				ei=i;
+			}
+		}
+		System.out.println(ts+" "+ei);
+		return max_so_for;
+	}
+	public static void main(String[] args) {
+		int[] a={-2,-3,4,-1,-2,1,5,-3};
+		System.out.println(getMaxSum(a));
+	}
+}
