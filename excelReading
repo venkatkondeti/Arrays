@@ -1,0 +1,316 @@
+package com.accenture.qzcrai;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.apache.poi.openxml4j.opc.OPCPackage;
+import org.apache.poi.openxml4j.opc.PackageAccess;
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+
+public class ErrorReportingWithExcel {
+	
+	public static int getExcelColumnNumber(String column) {
+		int result = 0;
+		for (int i = 0; i < column.length(); i++) {
+			result *= 26;
+			result += column.charAt(i) - 'A' + 1;
+		}
+		return result;
+	}
+	
+	public static String getExcelColumnName(int number) {
+        final StringBuilder sb = new StringBuilder();
+
+        int num = number - 1;
+        while (num >=  0) {
+            int numChar = (num % 26)  + 65;
+            sb.append((char)numChar);
+            num = (num  / 26) - 1;
+        }
+        return sb.reverse().toString();
+    }
+	
+	void findErrors(){
+
+		try {
+			//File directory = new File("C://Temp//RegressionSheets");
+			File directory = new File("C://Users//kondeti.venkatarao//Documents//Regresion_sheets//test");
+
+			//File errors = new File("C://Users//kondeti.venkatarao//Documents//Regresion_sheets//Error.txt");
+			File errors = new File("C://Temp//RegressionSheets//Error.txt");
+			
+			//File mismatch = new File("C://Users//kondeti.venkatarao//Documents//Regresion_sheets//Mismatch.txt");
+			File mismatchs = new File("C://Temp//RegressionSheets//Mismatch.txt");
+			
+			
+			StringBuilder error = new StringBuilder();
+			StringBuilder misMatch = new StringBuilder();
+			
+			ArrayList<ArrayList<String>> errorList = new ArrayList<ArrayList<String>>();
+			
+			File[] files = directory.listFiles();
+			if(files!=null){
+				for(File file : files){
+					if(file.isFile()){
+						
+						
+						if (file.getName().endsWith(".xlsx") || file.getName().endsWith(".xlsm")) {
+							//FileInputStream fis = new FileInputStream(file);
+							// Create Workbook instance holding reference to .xlsx file
+							
+							OPCPackage pkg = OPCPackage.open(file, PackageAccess.READ);
+							XSSFWorkbook workbook = new XSSFWorkbook(pkg);
+							int i = 0;
+							while (i < workbook.getNumberOfSheets()) {
+								
+								// System.out.println(workbook.getNumberOfSheets());
+								// Get first/desired sheet from the workbook
+								XSSFSheet sheet = workbook.getSheetAt(i);
+								System.out.println(file.getName()+"   "+sheet.getSheetName());
+								//System.out.println(sheet.isSheetLocked());
+								/*if(!sheet.getSheetName().equalsIgnoreCase("cache") && !sheet.getSheetName().equalsIgnoreCase("setup") && !sheet.getSheetName().equalsIgnoreCase("Sim_Sell") 
+									&& !sheet.getSheetName().equalsIgnoreCase("+1 Notional") && !sheet.getSheetName().equalsIgnoreCase("-1 Notional") && !sheet.getSheetName().equalsIgnoreCase("Comparison")
+									&& !sheet.getSheetName().equalsIgnoreCase("Sim_CallSell") && !sheet.getSheetName().equalsIgnoreCase("Sim_CallBuy") && !sheet.getSheetName().equalsIgnoreCase("Buy")
+									&& !sheet.getSheetName().equalsIgnoreCase("Sell"))*/
+								if(!sheet.getSheetName().equalsIgnoreCase("cache") 
+										&& !sheet.getSheetName().equalsIgnoreCase("setup") 
+										&& !sheet.getSheetName().equalsIgnoreCase("Comparison")
+										&& !sheet.getSheetName().equalsIgnoreCase("long") 
+										&& !sheet.getSheetName().equalsIgnoreCase("short") 
+										&& !sheet.getSheetName().equalsIgnoreCase("Buy")
+										&& !sheet.getSheetName().equalsIgnoreCase("Sell") 
+										&& !sheet.getSheetName().equalsIgnoreCase("pay") 
+										&& !sheet.getSheetName().equalsIgnoreCase("Rec"))
+									if(!workbook.isSheetHidden(i))
+										if(sheet.getRow(0)!=null)
+											if(sheet.getRow(0).getCell(0)!=null )
+												if( sheet.getRow(0).getCell(0).getCellType() != Cell.CELL_TYPE_BLANK)
+													if(sheet.getRow(0).getCell(0).getRawValue().equalsIgnoreCase("fail")){
+														
+														// Iterate through each rows one by one
+														Iterator<Row> rowIterator = sheet.iterator();
+														while (rowIterator.hasNext()) {
+															Row row = rowIterator.next();
+															// For each row, iterate through all the columns
+															Iterator<Cell> cellIterator = row.cellIterator();
+															while (cellIterator.hasNext()) {
+																Cell cell = cellIterator.next();
+																// Check the cell type and format accordingly
+																switch (cell.getCellType()) {
+																/*
+																 * case Cell.CELL_TYPE_NUMERIC:
+																 * System.out.print(cell.getNumericCellValue());
+																 * break; case Cell.CELL_TYPE_STRING:
+																 * System.out.print(cell.getStringCellValue());
+																 * break;
+																 */
+																// case Cell.CELL_TYPE_FORMULA:
+																case Cell.CELL_TYPE_FORMULA:
+																	
+																	if (cell.getCellFormula().startsWith("IF("))
+																		if (sheet.getRow(row.getRowNum()).getCell(cell.getColumnIndex()).getRawValue().equals("1")) {
+																			
+																			HashSet<Integer> number = new HashSet<Integer>();
+																			ArrayList<String> alphas = new ArrayList<String>();
+																			
+																			String formula = sheet.getRow(row.getRowNum()).getCell(cell.getColumnIndex()).toString();
+																			Matcher digitMatcher = Pattern.compile("\\d+").matcher(formula);
+																			Matcher alphabetMatcher = Pattern.compile("[a-zA-Z]+").matcher(formula);
+																			
+																			while (alphabetMatcher.find()) {
+																				if (!alphabetMatcher.group().equals("TYPE"))
+																					alphas.add(alphabetMatcher.group());
+																			}
+																			
+																			int countIF = Collections.frequency(alphas, "IF");
+																			int countABS = Collections.frequency(alphas, "ABS");
+																			HashSet<String> alphaSet = new HashSet<String>(alphas);
+																			if (countIF != 5 && countIF != 6)
+																				alphaSet.remove("IF");
+																			if (countABS != 3 && countABS != 4)
+																				alphaSet.remove("ABS");
+																			
+																			while (digitMatcher.find()) {
+																				if (!digitMatcher.group().equals("0") && !digitMatcher.group().equals("1") && !digitMatcher.group().equals("01"))
+																					number.add(Integer.parseInt(digitMatcher.group()));
+																			}
+																			
+																			ArrayList<Integer> numberList = new ArrayList<Integer>(number);
+																			ArrayList<String> alphaList = new ArrayList<String>(alphaSet);
+																			//System.out.println("alphaSet"+ alphaSet);
+																			//System.out.println("numberList"+ numberList);
+																			
+																			int rowIndex = numberList.get(0) - 1;
+																			int originalColumnIndex = getExcelColumnNumber(alphaList.get(0)) - 1;
+																			int referenceColumnIndex = getExcelColumnNumber(alphaList.get(1)) - 1;
+																			if (originalColumnIndex > referenceColumnIndex) {
+																				int temp = referenceColumnIndex;
+																				referenceColumnIndex = originalColumnIndex;
+																				originalColumnIndex = temp;
+																			}
+																			
+																			// System.out.println(sheet.getRow(row.getRowNum()));
+																			//System.out.println("File Name: "+ file.getName());
+																			//System.out.println("Sheet Name: "+ sheet.getSheetName());
+																			//System.out.println(sheet.getRow(row.getRowNum()).getCell(cell.getColumnIndex()).toString());
+																			/*if (sheet.getRow(rowIndex).getCell(originalColumnIndex).getCellFormula().equals(""))
+														System.out.println("please help me out");*/
+																			/*if(sheet.getRow(rowIndex).getCell(originalColumnIndex).getCellType() == Cell.CELL_TYPE_FORMULA)
+																				System.out.println("Function Name: "+ sheet.getRow(rowIndex).getCell(originalColumnIndex).getCellFormula());*/
+																			//System.out.println("row indext"+ rowIndex);
+																			//System.out.println("row indext "+ rowIndex);
+																			//System.out.println("original column index "+ originalColumnIndex);
+																			//System.out.println("ref column index "+ referenceColumnIndex);
+																			/*
+																			 * System.out.println("File Name: " +
+																			 * file.getName());
+																			 * System.out.println("Sheet Name: " +
+																			 * sheet.getSheetName());
+																			 * System.out.println(cell
+																			 * .getCellFormula());
+																			 */
+																			
+																			
+																			if (sheet.getRow(rowIndex).getCell(originalColumnIndex).getCellFormula().contains("qCRA_")&& sheet.getRow(rowIndex)
+																					.getCell(originalColumnIndex).getRawValue().contains("Error:")) {
+																				
+																				ArrayList<String> errorMessage = new ArrayList<String>();
+																				
+																				error.append(System.getProperty("line.separator"));
+																				error.append("File Name: "+ file.getName());
+																				System.out.println("File Name: "+ file.getName());
+																				errorMessage.add(file.getName());
+																				error.append(System.getProperty("line.separator"));
+																				error.append("Sheet Name: "+ sheet.getSheetName());
+																				System.out.println("Sheet Name: "+ sheet.getSheetName());
+																				errorMessage.add(sheet.getSheetName());
+																				error.append(System.getProperty("line.separator"));
+																				if(sheet.getRow(rowIndex).getCell(originalColumnIndex).getCellType() == Cell.CELL_TYPE_FORMULA){
+																					error.append("Function Name: "+ sheet.getRow(rowIndex).getCell(originalColumnIndex).getCellFormula());
+																					System.out.println("Function Name: "+ sheet.getRow(rowIndex).getCell(originalColumnIndex).getCellFormula());
+																					String formulaName = sheet.getRow(rowIndex).getCell(originalColumnIndex).getCellFormula();
+																					errorMessage.add(formulaName.substring(5,formulaName.indexOf("(")));
+																				}
+																				else{
+																					error.append("Function Name: "+ sheet.getRow(rowIndex).getCell(originalColumnIndex).getRawValue());
+																					String functionName = sheet.getRow(rowIndex).getCell(originalColumnIndex).getRawValue(); 
+																					System.out.println("Function Name: "+ sheet.getRow(rowIndex).getCell(originalColumnIndex).getRawValue());
+																					errorMessage.add(functionName.substring(5,functionName.indexOf("(")));
+																				}
+																				error.append(System.getProperty("line.separator"));
+																				error.append("Cell Number: "+getExcelColumnName(originalColumnIndex+1)+numberList.get(0));
+																				System.out.println("Cell Number: "+getExcelColumnName(originalColumnIndex+1)+numberList.get(0));
+																				errorMessage.add(getExcelColumnName(originalColumnIndex+1)+numberList.get(0));
+																				error.append(System.getProperty("line.separator"));
+																				error.append("Orginal Value : "+sheet.getRow(rowIndex).getCell(originalColumnIndex).getRawValue());
+																				System.out.println("Orginal Value : "+sheet.getRow(rowIndex).getCell(originalColumnIndex).getRawValue());
+																				errorMessage.add(sheet.getRow(rowIndex).getCell(originalColumnIndex).getRawValue());
+																				error.append(System.getProperty("line.separator"));
+																				error.append("Reference Value : "+sheet.getRow(rowIndex).getCell(referenceColumnIndex));
+																				System.out.println("Reference Value : "+sheet.getRow(rowIndex).getCell(referenceColumnIndex));
+																				if(sheet.getRow(rowIndex).getCell(referenceColumnIndex)!=null)
+																				errorMessage.add(sheet.getRow(rowIndex).getCell(referenceColumnIndex).getRawValue());
+																				error.append(System.getProperty("line.separator"));
+																				System.out.println();
+																				
+																				errorList.add(errorMessage);
+																			} else {
+																				misMatch.append(System.getProperty("line.separator"));
+																				misMatch.append("File Name: "+ file.getName());
+																				misMatch.append(System.getProperty("line.separator"));
+																				misMatch.append("Sheet Name: "+ sheet.getSheetName());
+																				misMatch.append(System.getProperty("line.separator"));
+																				misMatch.append("Function Name: "+ sheet.getRow(rowIndex).getCell(originalColumnIndex).getCellFormula());
+																				misMatch.append(System.getProperty("line.separator"));
+																				misMatch.append("Cell Number: "+getExcelColumnName(originalColumnIndex+1)+numberList.get(0));
+																				misMatch.append(System.getProperty("line.separator"));
+																				misMatch.append("Orginal Value : "+sheet.getRow(rowIndex).getCell(originalColumnIndex).getRawValue());
+																				misMatch.append(System.getProperty("line.separator"));
+																				misMatch.append("Reference Value : "+sheet.getRow(rowIndex).getCell(referenceColumnIndex));
+																				misMatch.append(System.getProperty("line.separator"));
+																			}
+																		}
+																	break;
+																	
+																}
+																cell = null;
+															}
+															row = null;
+														}
+													}
+								i++;
+								sheet=null;
+							}
+							workbook=null;
+							pkg.close();
+						}
+					}
+				}
+			}
+			writeToLogFile(errors, error);
+			//writeToLogFile(mismatchs, misMatch);
+			writeToExcelFile(errorList);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	void writeToExcelFile(ArrayList<ArrayList<String>> errors){
+		XSSFWorkbook resultsWorkBook = new XSSFWorkbook();
+		XSSFSheet sheet = resultsWorkBook.createSheet("results");
+		Row titleRow = sheet.createRow(0);
+		String[] cellTitles = {"SHEET NAME", "TABS", "FUNCTION NAME", "CELL NUMBER", "ORIGINAL VALUE", "REFERENCE VALUE"};
+		int titleCellNUm=0;
+		for(String title : cellTitles){
+			Cell cellTitle = titleRow.createCell(titleCellNUm++);
+			cellTitle.setCellValue(title);
+		}
+		
+		int rowNum =1;
+		for(ArrayList<String> error : errors){
+			Row row = sheet.createRow(rowNum++);
+			int cellNum = 0;
+			for(String str : error){
+				Cell cell = row.createCell(cellNum++);
+				cell.setCellValue(str);
+			}
+		}
+		try {
+			//FileOutputStream fileOut = new FileOutputStream("C://Temp//RegressionSheets//results.xlsx");
+			FileOutputStream fileOut = new FileOutputStream("C://Users//kondeti.venkatarao//Documents//Regresion_sheets//test//results.xlsx");
+			resultsWorkBook.write(fileOut);
+			fileOut.close();
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	void writeToLogFile(File file, StringBuilder stringBuilder) throws IOException{
+		FileWriter fileWriter = new FileWriter(file);
+		BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+		bufferedWriter.write(stringBuilder.toString());
+		bufferedWriter.flush();
+		bufferedWriter.close();
+	}
+	public static void main(String[] args) {
+		ErrorReportingWithExcel errorReporting = new ErrorReportingWithExcel();
+		errorReporting.findErrors();
+	}
+
+}
