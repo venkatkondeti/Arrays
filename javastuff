@@ -1,0 +1,156 @@
+All interface methods are implicitly public and abstract. In other words,
+you do not need to actually type the public or abstract modifiers in the
+method declaration, but the method is still always public and abstract.
+
+■ All variables defined in an interface must be public, static, and final—
+in other words, interfaces can declare only constants, not instance variables.
+
+Interface methods must not be static.
+■ Because interface methods are abstract, they cannot be marked final,
+strictfp, or native. (More on these modifiers later.)
+■ An interface can extend one or more other interfaces.
+■ An interface cannot extend anything but another interface.
+■ An interface cannot implement another interface or class.
+■ An interface must be declared with the keyword interface.
+■ Interface types can be used polymorphically
+
+
+The following interface method declarations won't compile:
+final void bounce(); // final and abstract can never be used
+// together, and abstract is implied
+static void bounce(); // interfaces define instance methods
+private void bounce(); // interface methods are always public
+protected void bounce(); // (same as above)
+
+
+Whereas a class can use just two of the four access control levels (default or
+public), members can use all four:
+■ public
+■ protected
+■ default
+■ private
+
+Protected and Default Members
+A default member may be accessed only if the class accessing the
+member belongs to the same package, whereas a protected member can be accessed
+(through inheritance) by a subclass even if the subclass is in a different package.
+
+Default and protected behavior differ only when we talk about subclasses. If the
+protected keyword is used to define a member, any subclass of the class declaring
+the member can access it through inheritance. It doesn't matter if the superclass and
+subclass are in different packages, the protected superclass member is still visible to
+the subclass (although visible only in a very specific way as we'll see a little later).
+This is in contrast to the default behavior, which doesn't allow a subclass to access a
+superclass member unless the subclass is in the same package as the superclass.
+
+package certification;
+public class OtherClass {
+void testIt() { // No modifier means method has default
+// access
+System.out.println("OtherClass");
+}
+}
+In another source code file you have the following:
+package somethingElse;
+import certification.OtherClass;
+class AccessClass {
+static public void main(String[] args) {
+OtherClass o = new OtherClass();
+o.testIt();
+}
+}
+
+No method matching testIt() found in class
+certification.OtherClass. o.testIt();
+
+protected = inheritance
+The subclass can see the protected member
+only through inheritance.
+Protected does not mean that the subclass can treat the protected superclass member
+as though it were public. So if the subclass-outside-the-package gets a reference to
+the superclass (by, for example, creating an instance of the superclass somewhere
+in the subclass' code), the subclass cannot use the dot operator on the superclass
+reference to access the protected member. To a subclass-outside-the-package, a
+protected member might as well be default (or even private), when the subclass is
+using a reference to the superclass. The subclass can see the protected member
+only through inheritance.
+
+package certification;
+public class Parent {
+protected int x = 9; // protected access
+}
+The preceding code declares the variable x as protected. This makes the
+variable accessible to all other classes inside the certification package, as well as
+inheritable by any subclasses outside the package.
+
+For a subclass outside the package, the protected member can be accessed only
+through inheritance.
+
+
+
+Finally, you need to know that the abstract modifier can never be combined
+with the static modifier.
+
+Native Methods
+The native modifier indicates that a method is implemented in platform-dependent
+code, often in C. native can be applied only to methods—not classes, not variables, just methods.
+Note that a native method's body must be a semicolon (;)
+Strictfp Methods
+strictfp forces floating points (and any floating-point operations) to
+adhere to the IEEE 754 standard.
+
+it can modify a class or method declaration, and that a
+variable can never be declared strictfp.
+
+For boolean types there is not a range; a boolean can be only true or false. If
+someone asks you for the bit depth of a boolean, look them straight in the eye and
+say, "That's virtual-machine dependent." They'll be impressed.
+
+The char type (a character) contains a single, 16-bit Unicode character.
+Although the extended ASCII set known as ISO Latin-1 needs only 8 bits (256
+different characters), a larger range is needed to represent characters found in
+languages other than English. Unicode characters are actually represented by
+unsigned 16-bit integers, which means 216 possible values, ranging from 0 to 65535
+(216)-1.
+
+
+Although both chars and shorts are 16-bit types,
+remember that a short uses 1 bit to represent the sign, so fewer positive numbers are
+acceptable in a short).
+
+Local Variables---final
+
+Variables(non-local)----
+ final
+public
+protected
+private
+static
+transient
+volatile
+
+Methods
+final
+public
+protected
+private
+static
+abstract
+synchronized
+strictfp
+native
+
+The volatile modifier tells the JVM that a thread accessing the variable must
+always reconcile its own private copy of the variable with the master copy in
+memory
+
+class Coffee2 {
+enum CoffeeSize {BIG, HUGE, OVERWHELMING }
+CoffeeSize size;
+}
+public class CoffeeTest2 {
+public static void main(String[] args) {
+Coffee2 drink = new Coffee2();
+drink.size = Coffee2.CoffeeSize.BIG; // enclosing class name required
+}
+}.
